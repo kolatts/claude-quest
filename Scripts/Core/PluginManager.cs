@@ -25,6 +25,11 @@ namespace ClaudeCodeQuest.Core
         private readonly List<IIntegrationPlugin> _plugins = new();
         private readonly Queue<AgentEvent> _eventQueue = new();
 
+        public PluginManager()
+        {
+            GD.Print("[PluginManager] constructor called");
+        }
+
         public override void _Ready()
         {
             GD.Print("[PluginManager] _Ready called");
