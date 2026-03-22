@@ -78,12 +78,17 @@ namespace ClaudeCodeQuest.Integrations
             _pollAccumulator = 0;
 
             if (!Directory.Exists(_projectsDir))
+            {
+                GD.PrintErr($"[ClaudeCodePlugin] projects_dir missing on poll: {_projectsDir}");
                 return;
+            }
 
             var now = DateTime.UtcNow;
 
             var files = Directory.EnumerateFiles(_projectsDir, "*.jsonl", SearchOption.AllDirectories)
                 .ToList();
+
+            GD.Print($"[ClaudeCodePlugin] Poll: found {files.Count} jsonl file(s), {_trackers.Count} tracked");
 
             var activeFiles = new HashSet<string>();
 

@@ -27,8 +27,10 @@ namespace ClaudeCodeQuest.Core
 
         public override void _Ready()
         {
+            GD.Print("[PluginManager] _Ready called");
             var config = LoadConfig();
             RegisterPlugins(config);
+            GD.Print($"[PluginManager] Initialized with {_plugins.Count} plugin(s)");
         }
 
         public override void _Process(double delta)

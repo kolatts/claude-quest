@@ -24,13 +24,16 @@ namespace ClaudeCodeQuest
 
         public override void _Ready()
         {
+            GD.Print("[MainScene] _Ready called");
             BuildBackground();
             BuildEmptyLabel();
             BuildCamera();
 
             // Connect to PluginManager signal
+            GD.Print("[MainScene] Connecting to PluginManager...");
             var pm = GetNode<PluginManager>("/root/PluginManager");
             pm.AgentEventReceived += OnAgentEventReceived;
+            GD.Print("[MainScene] Connected to PluginManager signal");
         }
 
         public override void _Process(double delta)
