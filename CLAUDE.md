@@ -127,9 +127,12 @@ Current plan: `planning/20260322-mvp.md`
 
 When working on a task:
 1. Check the relevant phase checklist in the plan before starting
-2. Mark items complete (`- [x]`) as you finish them
-3. Add new open questions to the "Open Questions" section rather than making unilateral decisions
-4. If a technical decision changes, update the "Key Technical Decisions" table
+2. Mark items complete (`- [x]`) as you finish them **immediately after implementation** — do not batch updates
+3. If implementation diverges from the plan (different approach, renamed file, skipped item), update the plan to reflect what was actually built
+4. Add new open questions to the "Open Questions" section rather than making unilateral decisions
+5. If a technical decision changes, update the "Key Technical Decisions" table
+
+The plan is a living record of what exists, not just what was intended.
 
 ## What NOT to Do
 

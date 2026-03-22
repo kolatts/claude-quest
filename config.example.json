@@ -1,0 +1,43 @@
+{
+  "claude-code": {
+    "Enabled": true,
+    "Settings": {
+      "projects_dir": "~/.claude/projects",
+      "poll_interval_sec": "1.5"
+    }
+  },
+  "cmux": {
+    "Enabled": false,
+    "Settings": {
+      "socket_path": "~/Library/Application Support/cmux/cmux.sock",
+      "poll_interval_sec": "3"
+    }
+  },
+  "jira": {
+    "Enabled": false,
+    "Settings": {
+      "base_url": "",
+      "api_token": "",
+      "project_key": "",
+      "poll_interval_sec": "30"
+    }
+  },
+  "git": {
+    "Enabled": false,
+    "Settings": {
+      "repo_paths": ""
+    }
+  },
+  "github-pr": {
+    "Enabled": false,
+    "Settings": {
+      "repo": "",
+      "token": "",
+      "poll_interval_sec": "60"
+    }
+  },
+  "skill-tracker": {
+    "Enabled": false,
+    "Settings": {}
+  }
+}

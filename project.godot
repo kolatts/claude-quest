@@ -1,0 +1,28 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; but nothing stopping you from doing so at your own risk.
+; Changes to this file are not automatically reflected in the editor.
+
+config_version=5
+
+[application]
+
+config/name="ClaudeCodeQuest"
+config/description="Visualize Claude Code agent sessions as Final Fantasy-style characters."
+run/main_scene="res://Scenes/Main.tscn"
+config/features=PackedStringArray("4.4", "C#", "Forward Plus")
+
+[autoload]
+
+PluginManager="*res://Scripts/Core/PluginManager.cs"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=480
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
