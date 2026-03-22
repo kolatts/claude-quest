@@ -25,13 +25,13 @@ namespace ClaudeCodeQuest.Agents
         private double _xpTimer = 0;
         private const double XpDisplaySec = 1.5;
 
-        // ── child node refs (assigned in _Ready) ──────────────────────────
-        private ColorRect _body;
-        private ColorRect _statusRing;
-        private Label _nameLabel;
-        private Label _toolLabel;
-        private Label _xpLabel;
-        private Label _koLabel;
+        // ── child node refs (assigned in BuildNodes, called from _Ready) ──
+        private ColorRect _body = null!;
+        private ColorRect _statusRing = null!;
+        private Label _nameLabel = null!;
+        private Label _toolLabel = null!;
+        private Label _xpLabel = null!;
+        private Label _koLabel = null!;
 
         // State → body color
         private static Color ColorIdle     = new Color(0.5f, 0.5f, 0.5f);   // gray

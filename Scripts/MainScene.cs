@@ -16,10 +16,10 @@ namespace ClaudeCodeQuest
         private const float ScrollSpeed = 20f;  // ground scroll px/sec
 
         private readonly Dictionary<string, AgentCharacter> _agents = new();
-        private Label _emptyLabel;
-        private ColorRect _ground;
-        private ColorRect _sky;
-        private Camera2D _camera;
+        private Label _emptyLabel = null!;
+        private ColorRect _ground = null!;
+        private ColorRect _sky = null!;
+        private Camera2D _camera = null!;
         private float _groundOffset = 0f;
 
         public override void _Ready()

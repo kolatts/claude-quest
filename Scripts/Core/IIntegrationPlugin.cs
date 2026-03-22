@@ -24,14 +24,14 @@ namespace ClaudeCodeQuest.Core
 
     public class AgentEvent
     {
-        public string SessionId { get; set; }
-        public string SourcePlugin { get; set; }
+        public string? SessionId { get; set; }
+        public string? SourcePlugin { get; set; }
         public AgentEventType Type { get; set; }
         public DateTime Timestamp { get; set; }
-        public string ToolName { get; set; }
-        public string SkillName { get; set; }
+        public string? ToolName { get; set; }
+        public string? SkillName { get; set; }
         /// <summary>First 120 chars of context from the JSONL line.</summary>
-        public string Detail { get; set; }
+        public string? Detail { get; set; }
         public Dictionary<string, string> Metadata { get; set; }
 
         public AgentEvent()

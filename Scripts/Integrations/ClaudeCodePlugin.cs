@@ -147,7 +147,7 @@ namespace ClaudeCodeQuest.Integrations
                 using var stream = new FileStream(filePath, new FileStreamOptions
                 {
                     Mode = FileMode.Open,
-                    Access = FileAccess.Read,
+                    Access = System.IO.FileAccess.Read,
                     Share = FileShare.ReadWrite
                 });
 
