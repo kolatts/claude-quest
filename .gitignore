@@ -14,3 +14,13 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# .NET / Rider / VS
+*.csproj.old
+*.csproj.user
+.vs/
+bin/
+obj/
+
+# Godot UID files (auto-generated, not needed in source control)
+*.uid
