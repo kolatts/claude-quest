@@ -30,12 +30,17 @@ namespace ClaudeCodeQuest.Core
             GD.Print("[PluginManager] constructor called");
         }
 
-        public override void _Ready()
+        public void Startup()
         {
-            GD.Print("[PluginManager] _Ready called");
+            GD.Print("[PluginManager] Startup called");
             var config = LoadConfig();
             RegisterPlugins(config);
             GD.Print($"[PluginManager] Initialized with {_plugins.Count} plugin(s)");
+        }
+
+        public override void _Ready()
+        {
+            GD.Print("[PluginManager] _Ready called (unexpected path)");
         }
 
         public override void _Process(double delta)

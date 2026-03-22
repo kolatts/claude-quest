@@ -31,11 +31,13 @@ namespace ClaudeCodeQuest
             BuildEmptyLabel();
             BuildCamera();
 
-            // Create PluginManager as a child node — more reliable than autoload with C#
+            // Create PluginManager as a child node and call Startup() explicitly
+            // (don't rely on _Ready — it fires async in C# child nodes)
             _pluginManager = new PluginManager();
             AddChild(_pluginManager);
             _pluginManager.AgentEventReceived += OnAgentEventReceived;
-            GD.Print("[MainScene] PluginManager created and signal connected");
+            _pluginManager.Startup();
+            GD.Print("[MainScene] PluginManager created and started");
         }
 
         public override void _Process(double delta)
