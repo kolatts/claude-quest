@@ -33,14 +33,23 @@ namespace ClaudeCodeQuest.Core
         public void Startup()
         {
             GD.Print("[PluginManager] Startup called");
-            var config = LoadConfig();
-            RegisterPlugins(config);
-            GD.Print($"[PluginManager] Initialized with {_plugins.Count} plugin(s)");
+            try
+            {
+                var config = LoadConfig();
+                GD.Print("[PluginManager] Config loaded");
+                RegisterPlugins(config);
+                GD.Print($"[PluginManager] Initialized with {_plugins.Count} plugin(s)");
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[PluginManager] EXCEPTION in Startup: {ex}");
+            }
         }
 
         public override void _Ready()
         {
-            GD.Print("[PluginManager] _Ready called (unexpected path)");
+            GD.Print("[PluginManager] _Ready called — calling Startup");
+            Startup();
         }
 
         public override void _Process(double delta)

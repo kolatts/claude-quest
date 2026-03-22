@@ -36,8 +36,7 @@ namespace ClaudeCodeQuest
             _pluginManager = new PluginManager();
             AddChild(_pluginManager);
             _pluginManager.AgentEventReceived += OnAgentEventReceived;
-            _pluginManager.Startup();
-            GD.Print("[MainScene] PluginManager created and started");
+            GD.Print("[MainScene] PluginManager added, waiting for _Ready to call Startup");
         }
 
         public override void _Process(double delta)
