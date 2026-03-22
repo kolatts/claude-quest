@@ -186,8 +186,8 @@ claude-code-quest/
 
 ## Tech Stack
 
-- **Engine:** Godot 4.4+ with .NET/C# support
-- **Language:** C# (net6.0)
+- **Engine:** Godot 4.6 with .NET/C# support
+- **Language:** C# (net8.0)
 - **Dependencies:** Newtonsoft.Json (JSONL parsing, cmux socket protocol)
 - **Target:** macOS standalone
 - **Rendering:** 2D pixel art, `canvas_textures` filter set to `nearest`

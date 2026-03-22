@@ -16,7 +16,7 @@ namespace ClaudeCodeQuest.Integrations
         public string DisplayName => "Jira";
         public bool IsEnabled => false;
 
-        public event Action<AgentEvent> OnEvent;
+        public event Action<AgentEvent>? OnEvent;
 
         // Expected config keys: base_url, api_token, project_key, poll_interval_sec
         public void Initialize(Dictionary<string, string> config) { }
@@ -30,7 +30,7 @@ namespace ClaudeCodeQuest.Integrations
         public string DisplayName => "Git";
         public bool IsEnabled => false;
 
-        public event Action<AgentEvent> OnEvent;
+        public event Action<AgentEvent>? OnEvent;
 
         // Expected config keys: repo_paths (comma-separated)
         public void Initialize(Dictionary<string, string> config) { }
@@ -44,7 +44,7 @@ namespace ClaudeCodeQuest.Integrations
         public string DisplayName => "GitHub PR";
         public bool IsEnabled => false;
 
-        public event Action<AgentEvent> OnEvent;
+        public event Action<AgentEvent>? OnEvent;
 
         // Expected config keys: repo, token, poll_interval_sec
         public void Initialize(Dictionary<string, string> config) { }
@@ -58,7 +58,7 @@ namespace ClaudeCodeQuest.Integrations
         public string DisplayName => "Skill Tracker";
         public bool IsEnabled => false;
 
-        public event Action<AgentEvent> OnEvent;
+        public event Action<AgentEvent>? OnEvent;
 
         public void Initialize(Dictionary<string, string> config) { }
         public void Poll(double delta) { }

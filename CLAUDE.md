@@ -8,8 +8,8 @@ Claude Code Quest is a standalone Godot 4.x (C#) macOS app that visualizes Claud
 
 ## Tech Stack
 
-- **Engine:** Godot 4.4+ with .NET/C# support
-- **Language:** C# (net6.0 targeting)
+- **Engine:** Godot 4.6 with .NET/C# support
+- **Language:** C# (net8.0 targeting)
 - **Key dependency:** Newtonsoft.Json (for JSONL and cmux JSON-RPC parsing)
 - **Platform target:** macOS standalone (pixel art, side-scrolling 2D)
 

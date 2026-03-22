@@ -52,6 +52,6 @@ namespace ClaudeCodeQuest.Core
         void Poll(double delta);
         void Shutdown();
 
-        event Action<AgentEvent> OnEvent;
+        event Action<AgentEvent>? OnEvent;
     }
 }

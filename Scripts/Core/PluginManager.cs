@@ -19,7 +19,7 @@ namespace ClaudeCodeQuest.Core
         public delegate void AgentEventReceivedEventHandler(string sessionId, string sourcePlugin, int eventType, string toolName, string skillName, string detail);
 
         private static readonly string ConfigPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
             ".claude-code-quest", "config.json");
 
         private readonly List<IIntegrationPlugin> _plugins = new();

@@ -19,10 +19,10 @@ namespace ClaudeCodeQuest.Integrations
         public string DisplayName => "Claude Code";
         public bool IsEnabled => _enabled;
 
-        public event Action<AgentEvent> OnEvent;
+        public event Action<AgentEvent>? OnEvent;
 
         private bool _enabled = true;
-        private string _projectsDir;
+        private string _projectsDir = "";
         private double _pollInterval = 1.5;
         private double _pollAccumulator = 0;
         private double _idleTimeoutSec = 7.0;
@@ -31,7 +31,7 @@ namespace ClaudeCodeQuest.Integrations
         // Per-file state
         private class FileTracker
         {
-            public string SessionId;
+            public string SessionId = "";
             public long ByteOffset;
             public double TimeSinceLastEvent;
             public bool WaitingEmitted;
@@ -52,7 +52,7 @@ namespace ClaudeCodeQuest.Integrations
 
         public void Initialize(Dictionary<string, string> config)
         {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
 
             _projectsDir = config.TryGetValue("projects_dir", out var dir) && !string.IsNullOrEmpty(dir)
                 ? dir.Replace("~", home)
@@ -72,7 +72,6 @@ namespace ClaudeCodeQuest.Integrations
             _pollAccumulator += delta;
             if (_pollAccumulator < _pollInterval)
             {
-                // Still tick idle timers every frame
                 TickIdleTimers(delta);
                 return;
             }
@@ -83,7 +82,6 @@ namespace ClaudeCodeQuest.Integrations
 
             var now = DateTime.UtcNow;
 
-            // Find all .jsonl files, including sessions/ subdirectories
             var files = Directory.EnumerateFiles(_projectsDir, "*.jsonl", SearchOption.AllDirectories)
                 .ToList();
 
@@ -93,7 +91,6 @@ namespace ClaudeCodeQuest.Integrations
             {
                 var info = new FileInfo(filePath);
 
-                // Skip files not modified in the last stale threshold
                 if ((now - info.LastWriteTimeUtc).TotalSeconds > _staleThresholdSec)
                 {
                     if (_trackers.TryGetValue(filePath, out var staleTracker) && staleTracker.SessionStartEmitted)
@@ -113,7 +110,6 @@ namespace ClaudeCodeQuest.Integrations
 
                 if (!_trackers.TryGetValue(filePath, out var tracker))
                 {
-                    // New file — start from current end (live activity only)
                     tracker = new FileTracker
                     {
                         SessionId = DeriveSessionId(filePath),
@@ -128,7 +124,6 @@ namespace ClaudeCodeQuest.Integrations
                 ReadNewLines(filePath, tracker);
             }
 
-            // Clean up trackers for files that no longer exist
             foreach (var key in _trackers.Keys.ToList())
             {
                 if (!activeFiles.Contains(key))
@@ -149,13 +144,19 @@ namespace ClaudeCodeQuest.Integrations
         {
             try
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var stream = new FileStream(filePath, new FileStreamOptions
+                {
+                    Mode = FileMode.Open,
+                    Access = FileAccess.Read,
+                    Share = FileShare.ReadWrite
+                });
+
                 if (stream.Length <= tracker.ByteOffset)
                     return;
 
                 stream.Seek(tracker.ByteOffset, SeekOrigin.Begin);
                 using var reader = new StreamReader(stream);
-                string line;
+                string? line;
                 while ((line = reader.ReadLine()) != null)
                 {
                     tracker.ByteOffset = stream.Position;
@@ -173,12 +174,12 @@ namespace ClaudeCodeQuest.Integrations
         {
             JObject obj;
             try { obj = JObject.Parse(line); }
-            catch { return; } // malformed line — skip silently
+            catch { return; }
 
             var type = obj["type"]?.ToString();
             if (type == null) return;
 
-            AgentEvent ev = null;
+            AgentEvent? ev = null;
 
             if (type == "assistant")
             {
@@ -211,7 +212,7 @@ namespace ClaudeCodeQuest.Integrations
             Emit(ev);
         }
 
-        private AgentEvent ClassifyAssistantMessage(JObject obj, string sessionId)
+        private AgentEvent? ClassifyAssistantMessage(JObject obj, string sessionId)
         {
             var content = obj["message"]?["content"] as JArray;
             if (content == null) return null;
@@ -236,8 +237,7 @@ namespace ClaudeCodeQuest.Integrations
                 else
                     eventType = AgentEventType.Thinking;
 
-                // Check for skill usage in tool input
-                string skillName = null;
+                string? skillName = null;
                 var inputStr = input?.ToString() ?? "";
                 if (inputStr.Contains("SKILL.md") || inputStr.Contains("skills/"))
                     skillName = ExtractSkillName(inputStr);
@@ -285,13 +285,11 @@ namespace ClaudeCodeQuest.Integrations
 
         private static string DeriveSessionId(string filePath)
         {
-            // Use the filename (without extension) as the session ID
-            return Path.GetFileNameWithoutExtension(filePath);
+            return Path.GetFileNameWithoutExtension(filePath) ?? filePath;
         }
 
-        private static string ExtractSkillName(string input)
+        private static string? ExtractSkillName(string input)
         {
-            // Look for patterns like "skills/frontend-design/SKILL.md" or ".claude/pdf"
             var idx = input.IndexOf("skills/", StringComparison.OrdinalIgnoreCase);
             if (idx >= 0)
             {
