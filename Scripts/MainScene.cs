@@ -2,6 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using ClaudeCodeQuest.Core;
 using ClaudeCodeQuest.Agents;
+using ClaudeCodeQuest.Integrations;
 
 namespace ClaudeCodeQuest
 {
@@ -21,6 +22,7 @@ namespace ClaudeCodeQuest
         private ColorRect _sky = null!;
         private Camera2D _camera = null!;
         private float _groundOffset = 0f;
+        private PluginManager _pluginManager = null!;
 
         public override void _Ready()
         {
@@ -29,11 +31,11 @@ namespace ClaudeCodeQuest
             BuildEmptyLabel();
             BuildCamera();
 
-            // Connect to PluginManager signal
-            GD.Print("[MainScene] Connecting to PluginManager...");
-            var pm = GetNode<PluginManager>("/root/PluginManager");
-            pm.AgentEventReceived += OnAgentEventReceived;
-            GD.Print("[MainScene] Connected to PluginManager signal");
+            // Create PluginManager as a child node — more reliable than autoload with C#
+            _pluginManager = new PluginManager();
+            AddChild(_pluginManager);
+            _pluginManager.AgentEventReceived += OnAgentEventReceived;
+            GD.Print("[MainScene] PluginManager created and signal connected");
         }
 
         public override void _Process(double delta)

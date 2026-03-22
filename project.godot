@@ -15,10 +15,6 @@ config/description="Visualize Claude Code agent sessions as Final Fantasy-style 
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 
-[autoload]
-
-PluginManager="*res://Scenes/PluginManager.tscn"
-
 [display]
 
 window/size/viewport_width=1280
