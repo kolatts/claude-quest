@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Godot;
-using Newtonsoft.Json.Linq;
 using ClaudeCodeQuest.Core;
 
 namespace ClaudeCodeQuest.Integrations
@@ -26,9 +27,8 @@ namespace ClaudeCodeQuest.Integrations
         private double _pollInterval = 1.5;
         private double _pollAccumulator = 0;
         private double _idleTimeoutSec = 7.0;
-        private double _staleThresholdSec = 120; // 2 minutes — keep recently active sessions visible
+        private double _staleThresholdSec = 120;
 
-        // Per-file state
         private class FileTracker
         {
             public string SessionId = "";
@@ -61,10 +61,10 @@ namespace ClaudeCodeQuest.Integrations
             if (config.TryGetValue("poll_interval_sec", out var interval) && double.TryParse(interval, out var iv))
                 _pollInterval = iv;
 
+            GD.Print($"[ClaudeCodePlugin] Watching: {_projectsDir}");
+
             if (!Directory.Exists(_projectsDir))
-            {
-                GD.PrintErr($"[ClaudeCodePlugin] projects_dir not found: {_projectsDir} — plugin will wait.");
-            }
+                GD.PrintErr($"[ClaudeCodePlugin] projects_dir not found: {_projectsDir}");
         }
 
         public void Poll(double delta)
@@ -78,15 +78,10 @@ namespace ClaudeCodeQuest.Integrations
             _pollAccumulator = 0;
 
             if (!Directory.Exists(_projectsDir))
-            {
-                GD.PrintErr($"[ClaudeCodePlugin] projects_dir missing on poll: {_projectsDir}");
                 return;
-            }
 
             var now = DateTime.UtcNow;
-
-            var files = Directory.EnumerateFiles(_projectsDir, "*.jsonl", SearchOption.AllDirectories)
-                .ToList();
+            var files = Directory.EnumerateFiles(_projectsDir, "*.jsonl", SearchOption.AllDirectories).ToList();
 
             GD.Print($"[ClaudeCodePlugin] Poll: found {files.Count} jsonl file(s), {_trackers.Count} tracked");
 
@@ -100,12 +95,7 @@ namespace ClaudeCodeQuest.Integrations
                 {
                     if (_trackers.TryGetValue(filePath, out var staleTracker) && staleTracker.SessionStartEmitted)
                     {
-                        Emit(new AgentEvent
-                        {
-                            SessionId = staleTracker.SessionId,
-                            SourcePlugin = Id,
-                            Type = AgentEventType.SessionEnd
-                        });
+                        Emit(new AgentEvent { SessionId = staleTracker.SessionId, SourcePlugin = Id, Type = AgentEventType.SessionEnd });
                         _trackers.Remove(filePath);
                     }
                     continue;
@@ -115,23 +105,16 @@ namespace ClaudeCodeQuest.Integrations
 
                 if (!_trackers.TryGetValue(filePath, out var tracker))
                 {
-                    // If the file was modified in the last 60 seconds, rewind
-                    // up to 8KB so we catch the tail end of an active session.
-                    // Otherwise start at EOF — we only care about live activity.
                     var age = (now - info.LastWriteTimeUtc).TotalSeconds;
-                    var startOffset = age < 60.0
-                        ? Math.Max(0, info.Length - 8192)
-                        : info.Length;
+                    var startOffset = age < 60.0 ? Math.Max(0, info.Length - 8192) : info.Length;
 
                     tracker = new FileTracker
                     {
                         SessionId = DeriveSessionId(filePath),
                         ByteOffset = startOffset,
-                        TimeSinceLastEvent = 0,
-                        WaitingEmitted = false,
-                        SessionStartEmitted = false
                     };
                     _trackers[filePath] = tracker;
+                    GD.Print($"[ClaudeCodePlugin] Tracking new file: {Path.GetFileName(filePath)} offset={startOffset}");
                 }
 
                 ReadNewLines(filePath, tracker);
@@ -150,8 +133,6 @@ namespace ClaudeCodeQuest.Integrations
         }
 
         public void Shutdown() { }
-
-        // ── private helpers ────────────────────────────────────────────────
 
         private void ReadNewLines(string filePath, FileTracker tracker)
         {
@@ -185,32 +166,20 @@ namespace ClaudeCodeQuest.Integrations
 
         private void ProcessLine(string line, FileTracker tracker)
         {
-            JObject obj;
-            try { obj = JObject.Parse(line); }
+            JsonObject? obj;
+            try { obj = JsonNode.Parse(line)?.AsObject(); }
             catch { return; }
+            if (obj == null) return;
 
-            var type = obj["type"]?.ToString();
+            var type = obj["type"]?.GetValue<string>();
             if (type == null) return;
 
             AgentEvent? ev = null;
 
             if (type == "assistant")
-            {
                 ev = ClassifyAssistantMessage(obj, tracker.SessionId);
-            }
-            else if (type == "system")
-            {
-                var subtype = obj["subtype"]?.ToString();
-                if (subtype == "turn_duration")
-                {
-                    ev = new AgentEvent
-                    {
-                        SessionId = tracker.SessionId,
-                        SourcePlugin = Id,
-                        Type = AgentEventType.TurnComplete
-                    };
-                }
-            }
+            else if (type == "system" && obj["subtype"]?.GetValue<string>() == "turn_duration")
+                ev = new AgentEvent { SessionId = tracker.SessionId, SourcePlugin = Id, Type = AgentEventType.TurnComplete };
 
             if (ev == null) return;
 
@@ -225,33 +194,28 @@ namespace ClaudeCodeQuest.Integrations
             Emit(ev);
         }
 
-        private AgentEvent? ClassifyAssistantMessage(JObject obj, string sessionId)
+        private AgentEvent? ClassifyAssistantMessage(JsonObject obj, string sessionId)
         {
-            var content = obj["message"]?["content"] as JArray;
+            var content = obj["message"]?["content"]?.AsArray();
             if (content == null) return null;
 
             foreach (var item in content)
             {
-                if (item["type"]?.ToString() != "tool_use") continue;
+                if (item?["type"]?.GetValue<string>() != "tool_use") continue;
 
-                var toolName = item["name"]?.ToString() ?? "";
-                var input = item["input"];
-                var detail = input?.ToString() ?? "";
-                if (detail.Length > 120) detail = detail[..120];
+                var toolName = item["name"]?.GetValue<string>() ?? "";
+                var inputStr = item["input"]?.ToJsonString() ?? "";
+                var detail = inputStr.Length > 120 ? inputStr[..120] : inputStr;
 
                 AgentEventType eventType;
                 if (TypingTools.Contains(toolName))
                     eventType = AgentEventType.Typing;
                 else if (ReadingTools.Contains(toolName))
                     eventType = AgentEventType.Reading;
-                else if (toolName.Equals("Task", StringComparison.OrdinalIgnoreCase) ||
-                         toolName.Equals("Bash", StringComparison.OrdinalIgnoreCase))
-                    eventType = AgentEventType.Thinking;
                 else
                     eventType = AgentEventType.Thinking;
 
                 string? skillName = null;
-                var inputStr = input?.ToString() ?? "";
                 if (inputStr.Contains("SKILL.md") || inputStr.Contains("skills/"))
                     skillName = ExtractSkillName(inputStr);
 
@@ -266,40 +230,25 @@ namespace ClaudeCodeQuest.Integrations
                 };
             }
 
-            // Text-only assistant message → Thinking
-            return new AgentEvent
-            {
-                SessionId = sessionId,
-                SourcePlugin = Id,
-                Type = AgentEventType.Thinking
-            };
+            return new AgentEvent { SessionId = sessionId, SourcePlugin = Id, Type = AgentEventType.Thinking };
         }
 
         private void TickIdleTimers(double delta)
         {
             foreach (var tracker in _trackers.Values)
             {
-                if (!tracker.SessionStartEmitted) continue;
-                if (tracker.WaitingEmitted) continue;
-
+                if (!tracker.SessionStartEmitted || tracker.WaitingEmitted) continue;
                 tracker.TimeSinceLastEvent += delta;
                 if (tracker.TimeSinceLastEvent >= _idleTimeoutSec)
                 {
                     tracker.WaitingEmitted = true;
-                    Emit(new AgentEvent
-                    {
-                        SessionId = tracker.SessionId,
-                        SourcePlugin = Id,
-                        Type = AgentEventType.WaitingInput
-                    });
+                    Emit(new AgentEvent { SessionId = tracker.SessionId, SourcePlugin = Id, Type = AgentEventType.WaitingInput });
                 }
             }
         }
 
-        private static string DeriveSessionId(string filePath)
-        {
-            return Path.GetFileNameWithoutExtension(filePath) ?? filePath;
-        }
+        private static string DeriveSessionId(string filePath) =>
+            Path.GetFileNameWithoutExtension(filePath) ?? filePath;
 
         private static string? ExtractSkillName(string input)
         {

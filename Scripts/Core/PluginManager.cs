@@ -2,17 +2,13 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using ClaudeCodeQuest.Core;
 using ClaudeCodeQuest.Integrations;
 
 namespace ClaudeCodeQuest.Core
 {
-    /// <summary>
-    /// Autoload node. Loads config, owns all plugins, calls Poll() every frame,
-    /// and re-emits AgentEvents as a Godot signal for the scene layer.
-    /// </summary>
     public partial class PluginManager : Node
     {
         [Signal]
@@ -79,7 +75,7 @@ namespace ClaudeCodeQuest.Core
                 plugin.Shutdown();
         }
 
-        private void RegisterPlugins(JObject config)
+        private void RegisterPlugins(JsonObject config)
         {
             Register(new ClaudeCodePlugin(), config);
             Register(new StubJiraPlugin(), config);
@@ -88,15 +84,15 @@ namespace ClaudeCodeQuest.Core
             Register(new StubSkillTrackerPlugin(), config);
         }
 
-        private void Register(IIntegrationPlugin plugin, JObject config)
+        private void Register(IIntegrationPlugin plugin, JsonObject config)
         {
             var settings = new Dictionary<string, string>();
             bool enabled = true;
 
-            if (config.TryGetValue(plugin.Id, out var section) && section is JObject sectionObj)
+            if (config.TryGetPropertyValue(plugin.Id, out var section) && section is JsonObject sectionObj)
             {
-                enabled = sectionObj["Enabled"]?.Value<bool>() ?? true;
-                if (sectionObj["Settings"] is JObject settingsObj)
+                enabled = sectionObj["Enabled"]?.GetValue<bool>() ?? true;
+                if (sectionObj["Settings"] is JsonObject settingsObj)
                 {
                     foreach (var kv in settingsObj)
                         settings[kv.Key] = kv.Value?.ToString() ?? "";
@@ -115,21 +111,21 @@ namespace ClaudeCodeQuest.Core
             GD.Print($"[PluginManager] Registered: {plugin.DisplayName}");
         }
 
-        private JObject LoadConfig()
+        private JsonObject LoadConfig()
         {
             try
             {
                 if (File.Exists(ConfigPath))
                 {
                     var json = File.ReadAllText(ConfigPath);
-                    return JObject.Parse(json);
+                    return JsonNode.Parse(json)?.AsObject() ?? new JsonObject();
                 }
             }
             catch (Exception ex)
             {
                 GD.PrintErr($"[PluginManager] Could not load config: {ex.Message} — using defaults.");
             }
-            return new JObject();
+            return new JsonObject();
         }
     }
 }
