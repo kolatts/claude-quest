@@ -26,7 +26,7 @@ namespace ClaudeCodeQuest.Integrations
         private double _pollInterval = 1.5;
         private double _pollAccumulator = 0;
         private double _idleTimeoutSec = 7.0;
-        private double _staleThresholdSec = 600; // 10 minutes
+        private double _staleThresholdSec = 120; // 2 minutes — keep recently active sessions visible
 
         // Per-file state
         private class FileTracker
@@ -110,10 +110,18 @@ namespace ClaudeCodeQuest.Integrations
 
                 if (!_trackers.TryGetValue(filePath, out var tracker))
                 {
+                    // If the file was modified in the last 60 seconds, rewind
+                    // up to 8KB so we catch the tail end of an active session.
+                    // Otherwise start at EOF — we only care about live activity.
+                    var age = (now - info.LastWriteTimeUtc).TotalSeconds;
+                    var startOffset = age < 60.0
+                        ? Math.Max(0, info.Length - 8192)
+                        : info.Length;
+
                     tracker = new FileTracker
                     {
                         SessionId = DeriveSessionId(filePath),
-                        ByteOffset = info.Length,
+                        ByteOffset = startOffset,
                         TimeSinceLastEvent = 0,
                         WaitingEmitted = false,
                         SessionStartEmitted = false
