@@ -134,6 +134,43 @@ When working on a task:
 
 The plan is a living record of what exists, not just what was intended.
 
+## Testing & Debugging
+
+### Building without the editor
+```bash
+dotnet build ClaudeCodeQuest.csproj
+```
+Build output goes to `.godot/mono/temp/bin/Debug/ClaudeCodeQuest.dll`. Always build before running headless or after code changes to ensure Godot picks up the latest compiled assembly.
+
+### Headless smoke test (startup only)
+```bash
+/Applications/Godot_mono.app/Contents/MacOS/Godot --headless --quit-after 5
+```
+Useful for verifying startup logs and catching exceptions. Note: `_Process` does not tick in headless mode, so poll cycles and agent events will not fire. Use only to check initialization.
+
+### Live debug log
+The `ClaudeCodePlugin` writes a log to `~/.claude-code-quest/debug.log`. Tail it while the game is running in the editor to inspect poll cycles, file tracking, and session events without needing to read the Godot Output panel:
+```bash
+tail -f ~/.claude-code-quest/debug.log
+```
+
+### Running the game
+Hit **Build** (hammer icon) in the Godot editor after any code change, then **▶ Play**. The Output tab at the bottom shows all `GD.Print` and `GD.PrintErr` output.
+
+### What to look for on startup
+```
+[PluginManager] Startup called
+[PluginManager] Config loaded
+[ClaudeCodePlugin] Watching: /Users/<you>/.claude/projects
+[PluginManager] Registered: Claude Code
+[PluginManager] Initialized with 5 plugin(s)
+```
+Then every 1.5s in the debug log:
+```
+[ClaudeCodePlugin] Poll: found X jsonl file(s), Y tracked
+```
+If `Registered:` lines are missing, the plugin threw during `Initialize`. If poll lines are missing, `_Process` isn't running (scene not loaded correctly).
+
 ## What NOT to Do
 
 - Do not write to JSONL files or the cmux socket
