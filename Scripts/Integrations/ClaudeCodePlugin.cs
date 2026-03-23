@@ -27,7 +27,7 @@ namespace ClaudeCodeQuest.Integrations
         private double _pollInterval = 1.5;
         private double _pollAccumulator = 0;
         private double _idleTimeoutSec = 7.0;
-        private double _staleThresholdSec = 120;
+        private double _staleThresholdSec = 600; // 10 minutes
 
         private class FileTracker
         {
@@ -39,6 +39,21 @@ namespace ClaudeCodeQuest.Integrations
         }
 
         private readonly Dictionary<string, FileTracker> _trackers = new();
+
+        private static readonly string LogPath = Path.Combine(
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+            ".claude-code-quest", "debug.log");
+
+        private static void DebugLog(string msg)
+        {
+            try
+            {
+                var home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                Directory.CreateDirectory(Path.Combine(home, ".claude-code-quest"));
+                File.AppendAllText(LogPath, $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
+            }
+            catch { }
+        }
 
         private static readonly HashSet<string> TypingTools = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -83,7 +98,9 @@ namespace ClaudeCodeQuest.Integrations
             var now = DateTime.UtcNow;
             var files = Directory.EnumerateFiles(_projectsDir, "*.jsonl", SearchOption.AllDirectories).ToList();
 
-            GD.Print($"[ClaudeCodePlugin] Poll: found {files.Count} jsonl file(s), {_trackers.Count} tracked");
+            var msg = $"[ClaudeCodePlugin] Poll: found {files.Count} jsonl file(s), {_trackers.Count} tracked";
+            GD.Print(msg);
+            DebugLog(msg);
 
             var activeFiles = new HashSet<string>();
 
@@ -106,7 +123,7 @@ namespace ClaudeCodeQuest.Integrations
                 if (!_trackers.TryGetValue(filePath, out var tracker))
                 {
                     var age = (now - info.LastWriteTimeUtc).TotalSeconds;
-                    var startOffset = age < 60.0 ? Math.Max(0, info.Length - 8192) : info.Length;
+                    var startOffset = age < 600.0 ? Math.Max(0, info.Length - 8192) : info.Length;
 
                     tracker = new FileTracker
                     {
@@ -114,7 +131,9 @@ namespace ClaudeCodeQuest.Integrations
                         ByteOffset = startOffset,
                     };
                     _trackers[filePath] = tracker;
-                    GD.Print($"[ClaudeCodePlugin] Tracking new file: {Path.GetFileName(filePath)} offset={startOffset}");
+                    var trackMsg = $"[ClaudeCodePlugin] Tracking: {Path.GetFileName(filePath)} age={age:F0}s offset={startOffset}";
+                    GD.Print(trackMsg);
+                    DebugLog(trackMsg);
                 }
 
                 ReadNewLines(filePath, tracker);
@@ -185,6 +204,9 @@ namespace ClaudeCodeQuest.Integrations
 
             if (!tracker.SessionStartEmitted)
             {
+                var startMsg = $"[ClaudeCodePlugin] SessionStart: {tracker.SessionId}";
+                GD.Print(startMsg);
+                DebugLog(startMsg);
                 Emit(new AgentEvent { SessionId = tracker.SessionId, SourcePlugin = Id, Type = AgentEventType.SessionStart });
                 tracker.SessionStartEmitted = true;
             }
